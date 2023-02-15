@@ -12,8 +12,9 @@ build/
 [Bb]in/
 [Oo]bj/
 
-# Visual Studio
+# Visual Studio, Visual Studio Code
 .vs/
+.vscode/
 
 # Apple
 .DS_Store
