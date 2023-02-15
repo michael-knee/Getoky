@@ -1,0 +1,163 @@
+﻿@page "/people"
+@using Models
+@using System.Text.Json
+@using MK.Getoky.Web.Services
+@inject ILogger<Person> logger
+@inject IStorageService storageService
+
+<PageTitle>People</PageTitle>
+
+<h1>People</h1>
+
+<br />
+<EditForm Model="@newPerson" OnValidSubmit="@AddPersonAsync" class="row">
+    <div class="col-5">
+        <InputText @bind-Value="@newPerson.Name" placeholder="Add a new person" class="form-control" />
+    </div>
+    <div class="col">
+        <button class="btn btn-primary" type="submit">Add</button>
+    </div>
+</EditForm>
+<br />
+
+@if (people?.Count() > 0)
+{
+    int rowCount = 1;
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Person person in people.OrderBy(x => x.Name))
+            {
+                <tr>
+                    <td scope="row">@(rowCount++)</td>
+                    <td>@person.Name</td>
+                    <td><button class="btn btn-outline-danger" @onclick="() => RemovePerson(person.Name)">Remove</button></td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2">
+                    @if (lastModified != null)
+                    {
+                        <span class="fw-light text-muted">Last updated: @lastModified.Value</span>
+                    }
+                </td>
+                <td><button class="btn btn-danger" @onclick="ClearAllPeople">Clear all people</button></td>
+            </tr>
+        </tfoot>
+    </table>
+}
+else
+{
+    <p>There are currently no people.</p>
+}
+
+@code {
+
+    // Example using JS Interop library to access local (browser) storage:
+    //  https://github.com/Blazored/LocalStorage/blob/main/src/Blazored.LocalStorage/BrowserStorageProvider.cs
+
+    // Stored data
+    private List<Person>? people = new List<Person>();
+    private DateTime? lastModified;
+
+    // Page data
+    private Person newPerson = new Person();
+
+    protected override async Task OnInitializedAsync()
+    {
+        logger.LogInformation("Loading people...");
+
+        people = await storageService.GetAsync<List<Person>>(Constants.LocalStorageKey_People);
+        if (people == null)
+        {
+            people = new List<Person>();
+        }
+        logger.LogInformation("Loaded people.");
+
+        // Date formatting is a bit picky.
+        //  If a date object was stored, when it was retrieved the Australia date format failed to parse.
+        //  So we store the date/time as a string, and handle the date parsing here.
+        string? lastModifiedString = await storageService.GetAsync<string>(Constants.LocalStorageKey_People_LastModified);
+
+        logger.LogInformation("Loaded people last modified date/time.");
+
+        if (!string.IsNullOrWhiteSpace(lastModifiedString))
+        {
+            lastModified = DateTime.Parse(lastModifiedString);
+        }
+
+        logger.LogInformation("Finished loading people.");
+    }
+
+    private async Task ClearAllPeople()
+    {
+        // Local storage API: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+        logger.LogInformation("Clearing people...");
+
+        // Clear people
+        people?.Clear();
+        await storageService.RemoveAsync(Constants.LocalStorageKey_People);
+
+        // Update modified date/time
+        lastModified = DateTime.Now;
+        await storageService.SetAsync<string>(Constants.LocalStorageKey_People_LastModified, lastModified!.ToString()!);
+    }
+
+    private async Task RemovePerson(string personName)
+    {
+        Person? person = people?.FirstOrDefault(x => x.Name.ToUpper() == personName.ToUpper());
+        if (person != null)
+        {
+            people!.Remove(person);
+            await SavePeople();
+        }
+    }
+
+    private async Task AddPersonAsync()
+    {
+        logger.LogInformation("Saving items...");
+        if (!string.IsNullOrWhiteSpace(newPerson.Name))
+        {
+            // Add person to list
+            logger.LogInformation("Adding item to in-memory items....");
+            people?.Add(
+                new Person()
+                {
+                    Name = newPerson.Name
+                });
+
+            // Save people
+            logger.LogInformation("Calling storageService.SaveItemsAsync()...");
+            await SavePeople();
+
+            // Clear person text
+            logger.LogInformation("Clearing added person...");
+            newPerson.Name = string.Empty;
+        }
+        else
+        {
+            logger.LogInformation("No items to save.");
+        }
+        logger.LogInformation("Finished saving items.");
+    }
+
+    private async Task SavePeople()
+    {
+        // Example library wrapper around browser local storage:
+        //  https://github.com/Blazored/LocalStorage/blob/1dc9ee29034a695fc0c05c761864a0241d91d30b/src/Blazored.LocalStorage/BrowserStorageProvider.cs
+
+        await storageService.SetAsync<List<Person>>(Constants.LocalStorageKey_People, people!);
+
+        // Update modified date/time
+        lastModified = DateTime.Now;
+        await storageService.SetAsync<string>(Constants.LocalStorageKey_People_LastModified, lastModified!.ToString()!);
+    }
+}

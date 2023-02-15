@@ -1,0 +1,126 @@
+﻿@page "/"
+@using MK.Getoky.Web.Services
+@using MK.Getoky.Web.Models
+@inject ILogger<Index> logger
+@inject NavigationManager Navigation
+@inject IStorageService storageService
+
+<PageTitle>Getoky</PageTitle>
+
+<h1>Getting to know you</h1>
+
+<p>Getoky&trade; helps you get to know each other.</p>
+<p>Add some people and some questions, then let Getoky&trade; randomly allocate the questions to each person.</p>
+<p>You can use a pre-generated list of questions provided by Getoky&trade;.</p>
+
+<button class="btn btn-outline-primary btn-lg" @onclick="@(() => Navigation.NavigateTo("people"))">
+    <span class="oi oi-person" aria-hidden="true"></span>
+    <span>&nbsp;&nbsp;@(people?.Count() ?? 0) people</span>
+</button>
+<button class="btn btn-outline-success btn-lg" @onclick="@(() => Navigation.NavigateTo("questions"))">
+    <span class="oi oi-question-mark" aria-hidden="true"></span>
+    <span>&nbsp;&nbsp;@(questions?.Count() ?? 0) questions</span>
+</button>
+<button class="btn btn-outline-dark btn-lg" @onclick="AllocateQuestions">
+    <span class="oi oi-play-circle" aria-hidden="true"></span>
+    <span>&nbsp;&nbsp;Allocate questions</span>
+</button>
+
+<p>
+    <span class="text-danger">@error</span>
+</p>
+
+@if (allocations?.Count() > 0)
+{
+    int rowCount = 1;
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Person</th>
+                <th scope="col">Question</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var allocation in allocations.OrderBy(x => x.Person.Name))
+            {
+                <tr>
+                    <td scope="row">@(rowCount++)</td>
+                    <td>@allocation.Person.Name</td>
+                    <td>@allocation.Question.Text</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <span class="fw-light text-muted">@countOfQuestionsUsed out of @questions?.Count() questions used.</span>
+}
+
+@code {
+
+    private string error = string.Empty;
+    private List<Person>? people = new List<Person>();
+    private List<Question>? questions = new List<Question>();
+    private List<PersonQuestionAllocation>? allocations = new List<PersonQuestionAllocation>();
+    private DateTime? allocationsLastModified;
+    private int countOfQuestionsUsed = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        people = await storageService.GetAsync<List<Person>>(Constants.LocalStorageKey_People);
+        questions = await storageService.GetAsync<List<Question>>(Constants.LocalStorageKey_Questions);
+        allocations = await storageService.GetAsync<List<PersonQuestionAllocation>>(Constants.LocalStorageKey_Allocations);
+    }
+
+    private async Task AllocateQuestions()
+    {
+        // Clear existing allocations
+        allocations = new List<PersonQuestionAllocation>();
+        countOfQuestionsUsed = 0;
+
+        // Get latest, just in case...
+        people = await storageService.GetAsync<List<Person>>(Constants.LocalStorageKey_People);
+        questions = await storageService.GetAsync<List<Question>>(Constants.LocalStorageKey_Questions);
+
+        if (people == null || people?.Count() == 0)
+        {
+            error = "Please add some people before running the question allocation.";
+        }
+
+        if (questions == null || questions?.Count() == 0)
+        {
+            error = "Please add some questions before running the question allocation.";
+        }
+
+        if (people?.Count() > 0 && questions?.Count() > 0)
+        {
+            foreach (var person in people)
+            {
+                // Select a random question
+                int index = new Random().Next(questions.Count());
+                var question = questions[index];
+
+                allocations.Add(new PersonQuestionAllocation(person, question));
+            }
+            error = string.Empty;
+
+            // Save allocations
+            await storageService.SetAsync<List<PersonQuestionAllocation>>(Constants.LocalStorageKey_Allocations, allocations);
+
+            allocationsLastModified = DateTime.Now;
+            await storageService.SetAsync<string>(Constants.LocalStorageKey_Allocations_LastModified, allocationsLastModified!.ToString()!);
+        }
+
+        // Calculate questions not used
+        if (questions != null)
+        {
+            foreach (var question in questions!)
+            {
+                if (allocations.Any(x => x.Question.Text == question.Text))
+                {
+                    countOfQuestionsUsed++;
+                }
+            }
+        }
+    }
+
+}

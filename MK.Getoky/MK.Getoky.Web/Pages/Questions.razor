@@ -1,0 +1,165 @@
+﻿@page "/questions"
+@using Models
+@using System.Text.Json
+@using MK.Getoky.Web.Services
+@inject ILogger<Questions> logger
+@inject IStorageService storageService
+
+
+<PageTitle>Questions</PageTitle>
+
+<h1>Questions</h1>
+
+<br />
+<EditForm Model="@newQuestion" OnValidSubmit="@AddQuestionAsync" class="row">
+    <div class="col-5">
+        <InputText @bind-Value="@newQuestion.Text" placeholder="Add a new question" class="form-control" />
+    </div>
+    <div class="col">
+        <button class="btn btn-primary" type="submit">Add</button>
+    </div>
+</EditForm>
+<br />
+
+@if (questions?.Count() > 0)
+{
+    int rowCount = 1;
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Question</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Question question in questions.OrderBy(x => x.Text))
+            {
+                <tr>
+                    <td scope="row">@(rowCount++)</td>
+                    <td>@question.Text</td>
+                    <td><button class="btn btn-outline-danger" @onclick="() => RemoveQuestion(question.Text)">Remove</button></td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2">
+                    @if (lastModified != null)
+                    {
+                        <span class="fw-light text-muted">Last updated: @lastModified.Value</span>
+                    }
+                </td>
+                <td><button class="btn btn-danger" @onclick="ClearAllQuestions">Clear all questions</button></td>
+            </tr>
+        </tfoot>
+    </table>
+}
+else
+{
+    <p>There are currently no questions.</p>
+}
+
+@code {
+
+    // Example using JS Interop library to access local (browser) storage:
+    //  https://github.com/Blazored/LocalStorage/blob/main/src/Blazored.LocalStorage/BrowserStorageProvider.cs
+
+    // Stored data
+    private List<Question>? questions = new List<Question>();
+    private DateTime? lastModified;
+
+    // Page data
+    private Question newQuestion = new Question();
+
+    protected override async Task OnInitializedAsync()
+    {
+        logger.LogInformation("Loading questions...");
+
+        questions = await storageService.GetAsync<List<Question>>(Constants.LocalStorageKey_Questions);
+        if (questions == null)
+        {
+            questions = new List<Question>();
+        }
+
+        logger.LogInformation("Loaded questions.");
+
+        // Date formatting is a bit picky.
+        //  If a date object was stored, when it was retrieved the Australia date format failed to parse.
+        //  So we store the date/time as a string, and handle the date parsing here.
+        string? lastModifiedString = await storageService.GetAsync<string>(Constants.LocalStorageKey_Questions_LastModified);
+
+        logger.LogInformation("Loaded questions last modified date/time.");
+
+        if (!string.IsNullOrWhiteSpace(lastModifiedString))
+        {
+            lastModified = DateTime.Parse(lastModifiedString);
+        }
+
+        logger.LogInformation("Finished loading questions.");
+    }
+
+    private async Task ClearAllQuestions()
+    {
+        // Local storage API: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+        logger.LogInformation("Clearing questions...");
+
+        // Clear questions
+        questions?.Clear();
+        await storageService.RemoveAsync(Constants.LocalStorageKey_Questions);
+
+        // Update modified date/time
+        lastModified = DateTime.Now;
+        await storageService.SetAsync<string>(Constants.LocalStorageKey_Questions_LastModified, lastModified!.ToString()!);
+    }
+
+    private async Task RemoveQuestion(string questionText)
+    {
+        Question? question = questions?.FirstOrDefault(x => x.Text.ToUpper() == questionText.ToUpper());
+        if (question != null)
+        {
+            questions!.Remove(question);
+            await SaveQuestions();
+        }
+    }
+
+    private async Task AddQuestionAsync()
+    {
+        logger.LogInformation("Saving items...");
+        if (!string.IsNullOrWhiteSpace(newQuestion.Text))
+        {
+            // Add question to list
+            logger.LogInformation("Adding item to in-memory items....");
+            questions?.Add(
+                new Question()
+                {
+                    Text = newQuestion.Text
+                });
+
+            // Save questions
+            logger.LogInformation("Calling storageService.SaveItemsAsync()...");
+            await SaveQuestions();
+
+            // Clear question text
+            logger.LogInformation("Clearing added question...");
+            newQuestion.Text = string.Empty;
+        }
+        else
+        {
+            logger.LogInformation("No items to save.");
+        }
+        logger.LogInformation("Finished saving items.");
+    }
+
+    private async Task SaveQuestions()
+    {
+        // Example library wrapper around browser local storage:
+        //  https://github.com/Blazored/LocalStorage/blob/1dc9ee29034a695fc0c05c761864a0241d91d30b/src/Blazored.LocalStorage/BrowserStorageProvider.cs
+
+        await storageService.SetAsync<List<Question>>(Constants.LocalStorageKey_Questions, questions!);
+
+        // Update modified date/time
+        lastModified = DateTime.Now;
+        await storageService.SetAsync<string>(Constants.LocalStorageKey_Questions_LastModified, lastModified!.ToString()!);
+    }
+}
