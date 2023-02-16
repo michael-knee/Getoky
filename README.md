@@ -1,20 +1,21 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+Getoky is a sample Blazor Web Assembly app.
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+Create a list of people and questions, and then use Getoky to randomly allocate one question to each person.
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+The app was originally intended as a way to randomly allocate "getting to know you" questions to people. The name Getoky is a pseudo-acronym from (Ge)tting (to) (k)now (y)ou.
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+# Build
+`dotnet build`
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+# Run
+`dotnet run`
+
+# Data Storage
+This application uses local browser storage. 
+
+If you close and re-open the browser, the data will still be there.
+
+If you use a different browser, the data will __not__ be there.
+
+If you use a private browsing, the data will __not__ be there.
