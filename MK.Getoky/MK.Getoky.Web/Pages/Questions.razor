@@ -2,6 +2,7 @@
 @using Models
 @using System.Text.Json
 @using MK.Getoky.Web.Services
+@using MK.Getoky.Web.Data
 @inject ILogger<Questions> logger
 @inject IStorageService storageService
 
@@ -11,12 +12,19 @@
 <h1>Questions</h1>
 
 <br />
-<EditForm Model="@newQuestion" OnValidSubmit="@AddQuestionAsync" class="row gy-2">
-    <div class="col-sm-12 col-md-8 col-lg-5">
-        <InputText @bind-Value="@newQuestion.Text" placeholder="Add a new question" class="form-control" />
+<EditForm Model="@newQuestion" OnValidSubmit="@AddQuestionAsync">
+    <div class="row gy-2">
+        <div class="col-sm-12 col-md-8 col-lg-5">
+            <InputText @bind-Value="@newQuestion.Text" placeholder="Add a new question" class="form-control" />
+        </div>
+        <div class="col">
+            <button class="btn btn-primary" type="submit">Add</button>
+        </div>
     </div>
-    <div class="col">
-        <button class="btn btn-primary" type="submit">Add</button>
+    <div class="row pt-2">
+        <div class="col">
+            <button class="btn btn-success" @onclick="AddSampleQuestionsAsync">Add sample questions</button>
+        </div>
     </div>
 </EditForm>
 <br />
@@ -161,5 +169,17 @@ else
         // Update modified date/time
         lastModified = DateTime.Now;
         await storageService.SetAsync<string>(Constants.LocalStorageKey_Questions_LastModified, lastModified!.ToString()!);
+    }
+
+    private async void AddSampleQuestionsAsync()
+    {
+        foreach (var question in SampleQuestions.Questions)
+        {
+            if (!questions!.Any(x => x.Text.ToUpper() == question.Text.ToUpper()))
+            {
+                questions!.Add(question);
+            }
+        }
+        await SaveQuestions();
     }
 }
