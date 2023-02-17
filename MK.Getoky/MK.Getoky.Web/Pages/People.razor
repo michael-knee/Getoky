@@ -10,8 +10,8 @@
 <h1>People</h1>
 
 <br />
-<EditForm Model="@newPerson" OnValidSubmit="@AddPersonAsync" class="row">
-    <div class="col-5">
+<EditForm Model="@newPerson" OnValidSubmit="@AddPersonAsync" class="row gy-2">
+    <div class="col-sm-12 col-md-8 col-lg-5">
         <InputText @bind-Value="@newPerson.Name" placeholder="Add a new person" class="form-control" />
     </div>
     <div class="col">

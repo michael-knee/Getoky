@@ -11,8 +11,8 @@
 <h1>Questions</h1>
 
 <br />
-<EditForm Model="@newQuestion" OnValidSubmit="@AddQuestionAsync" class="row">
-    <div class="col-5">
+<EditForm Model="@newQuestion" OnValidSubmit="@AddQuestionAsync" class="row gy-2">
+    <div class="col-sm-12 col-md-8 col-lg-5">
         <InputText @bind-Value="@newQuestion.Text" placeholder="Add a new question" class="form-control" />
     </div>
     <div class="col">

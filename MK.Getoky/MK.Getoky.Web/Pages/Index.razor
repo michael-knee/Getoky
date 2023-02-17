@@ -13,18 +13,22 @@
 <p>Add some people and some questions, then let Getoky&trade; randomly allocate the questions to each person.</p>
 <p>You can use a pre-generated list of questions provided by Getoky&trade;.</p>
 
-<button class="btn btn-outline-primary btn-lg" @onclick="@(() => Navigation.NavigateTo("people"))">
-    <span class="oi oi-person" aria-hidden="true"></span>
-    <span>&nbsp;&nbsp;@(people?.Count() ?? 0) people</span>
-</button>
-<button class="btn btn-outline-success btn-lg" @onclick="@(() => Navigation.NavigateTo("questions"))">
-    <span class="oi oi-question-mark" aria-hidden="true"></span>
-    <span>&nbsp;&nbsp;@(questions?.Count() ?? 0) questions</span>
-</button>
-<button class="btn btn-outline-dark btn-lg" @onclick="AllocateQuestions">
-    <span class="oi oi-play-circle" aria-hidden="true"></span>
-    <span>&nbsp;&nbsp;Allocate questions</span>
-</button>
+<div class="d-grid gap-2 d-lg-block">
+    <button class="btn btn-outline-primary btn-lg" @onclick="@(() => Navigation.NavigateTo("people"))">
+        <span class="oi oi-person" aria-hidden="true"></span>
+        <span>&nbsp;&nbsp;@(people?.Count() ?? 0) people</span>
+    </button>
+
+    <button class="btn btn-outline-success btn-lg" @onclick="@(() => Navigation.NavigateTo("questions"))">
+        <span class="oi oi-question-mark" aria-hidden="true"></span>
+        <span>&nbsp;&nbsp;@(questions?.Count() ?? 0) questions</span>
+    </button>
+
+    <button class="btn btn-outline-dark btn-lg" @onclick="AllocateQuestions">
+        <span class="oi oi-play-circle" aria-hidden="true"></span>
+        <span>&nbsp;&nbsp;Allocate questions</span>
+    </button>
+</div>
 
 <p>
     <span class="text-danger">@error</span>
