@@ -15,17 +15,15 @@
 <p>The source code is available on <a href="https://github.com/michael-knee/Getoky" target="_blank" rel="external">GitHub <span class="oi oi-share"></span></a></p>
 
 <div class="d-grid gap-2 d-lg-block">
+    <button class="btn btn-outline-primary btn-lg" @onclick="@(() => Navigation.NavigateTo("questions"))">
+        <span class="oi oi-question-mark" aria-hidden="true"></span>
+        <span>&nbsp;&nbsp;@(questions?.Count() ?? 0) questions</span>
+    </button>
     <button class="btn btn-outline-primary btn-lg" @onclick="@(() => Navigation.NavigateTo("people"))">
         <span class="oi oi-person" aria-hidden="true"></span>
         <span>&nbsp;&nbsp;@(people?.Count() ?? 0) people</span>
     </button>
-
-    <button class="btn btn-outline-success btn-lg" @onclick="@(() => Navigation.NavigateTo("questions"))">
-        <span class="oi oi-question-mark" aria-hidden="true"></span>
-        <span>&nbsp;&nbsp;@(questions?.Count() ?? 0) questions</span>
-    </button>
-
-    <button class="btn btn-outline-dark btn-lg" @onclick="AllocateQuestions">
+    <button class="btn btn-outline-success btn-lg" @onclick="AllocateQuestions">
         <span class="oi oi-play-circle" aria-hidden="true"></span>
         <span>&nbsp;&nbsp;Allocate questions</span>
     </button>
@@ -74,13 +72,13 @@
         people = await storageService.GetAsync<List<Person>>(Constants.LocalStorageKey_People);
         questions = await storageService.GetAsync<List<Question>>(Constants.LocalStorageKey_Questions);
         allocations = await storageService.GetAsync<List<PersonQuestionAllocation>>(Constants.LocalStorageKey_Allocations);
+        CalculateQuestionsUsedCount();
     }
 
     private async Task AllocateQuestions()
     {
         // Clear existing allocations
         allocations = new List<PersonQuestionAllocation>();
-        countOfQuestionsUsed = 0;
 
         // Get latest, just in case...
         people = await storageService.GetAsync<List<Person>>(Constants.LocalStorageKey_People);
@@ -115,12 +113,17 @@
             await storageService.SetAsync<string>(Constants.LocalStorageKey_Allocations_LastModified, allocationsLastModified!.ToString()!);
         }
 
-        // Calculate questions not used
+        CalculateQuestionsUsedCount();
+    }
+
+    private void CalculateQuestionsUsedCount()
+    {
+        countOfQuestionsUsed = 0;
         if (questions != null)
         {
             foreach (var question in questions!)
             {
-                if (allocations.Any(x => x.Question.Text == question.Text))
+                if (allocations != null && allocations!.Any(x => x.Question.Text == question.Text))
                 {
                     countOfQuestionsUsed++;
                 }
