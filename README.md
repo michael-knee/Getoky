@@ -18,4 +18,4 @@ If you close and re-open the browser, the data will still be there.
 
 If you use a different browser, the data will __not__ be there.
 
-If you use a private browsing, the data will __not__ be there.
+If you use a private browsing session, the data will __not__ be there.
